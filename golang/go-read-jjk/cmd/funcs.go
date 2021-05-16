@@ -72,22 +72,21 @@ func invalidConfigFile() {
 // latestReleased returns the number of the latest released JJK chapter
 func latestReleased() int {
 	var chaptersDiv string
-	ctx, cancel := chromedp.NewContext(context.Background())
+	ctx, parentCancel := chromedp.NewContext(context.Background())
 
 	// browser allocation. Does not need timeout
 	if err := chromedp.Run(ctx); err != nil {
 		log.Fatal(err)
 	}
-	cancel()
 
 	// 1 minute timeout while waiting for the chapters to show up
-	ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
+	// the cancel function is discarded since it is already called by the parent context, which guarantees that all
+	// children contexts will be cancelled
+	ctx, _ = context.WithTimeout(ctx, time.Minute)
 
-	// since, at the time of writing, I am not sure if the reference website uses a consistente HTML layout, I mostly
+	// since, at the time of writing, I am not sure if the reference website uses a consistent HTML layout, I mostly
 	// played it safe. So the selection selects complete div which lists all available chapters. With that, I make use
 	// of some simple regex to extract all the chapters that are listed.
-
 	ctx, _ = chromedp.NewContext(ctx)
 	if err := chromedp.Run(ctx,
 		chromedp.Navigate("https://mangaplus.shueisha.co.jp/titles/100034"),
@@ -95,8 +94,11 @@ func latestReleased() int {
 			"div.styles-module_mainContainer_2tQWW > div > div > div.TitleDetail-module_flexContainer_1oGb4 > main > "+
 			"div:nth-child(1)", &chaptersDiv),
 	); err != nil {
-		log.Fatal(err)
+		msg := fmt.Sprintf("Failed to grab chapters text: %s", err.Error())
+		sendMessage(msg)
+		errLogger.Fatalln(msg)
 	}
+	parentCancel()
 
 	exp := regexp.MustCompile("#[0-9]+")
 	chapters := exp.FindAllString(chaptersDiv, 16)
@@ -109,7 +111,7 @@ func latestReleased() int {
 	latestStr := chapters[len(chapters)-1][1:]
 	latestInt, err := strconv.Atoi(latestStr)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to conver matched chapter regexp \"%s\" to int", latestStr)
+		msg := fmt.Sprintf("Failed to convert matched chapter regexp \"%s\" to int", latestStr)
 		sendMessage(msg)
 		errLogger.Fatalln(msg)
 	}
