@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -30,36 +31,34 @@ func exeDir() string {
 }
 
 // readConfig returns a map which represents the configuration file
-func readConfig() map[string]string {
+func readConfig() Config {
 	bytes, err := os.ReadFile(fileDir + confFile)
 	if err != nil {
 		errLogger.Println("Failed to read configuration failed:", err)
 		invalidConfigFile()
 	}
 
-	var configMap map[string]string
-	err = json.Unmarshal(bytes, &configMap)
+	var config Config
+	err = json.Unmarshal(bytes, &config)
 	if err != nil {
 		errLogger.Println("Failed to parse configuration file:", err)
 		invalidConfigFile()
 	}
 
-	// looks for the required keys on the configuration file map
-	for _, str := range []string{"chapter", "webhook"} {
-		if key, exists := configMap[str]; !exists {
-			errLogger.Printf("Configuration file lacks the \"%s\" key", key)
-			invalidConfigFile()
-		}
+	_, err = url.Parse(config.Webhook)
+	if err != nil {
+		errLogger.Println("Failed to parse discord webhook URL:", err)
+		os.Exit(1)
 	}
 
-	return configMap
+	return config
 }
 
 // invalidConfigFile writes the default configuration file into the appropriate location and exits the program
 func invalidConfigFile() {
 	configBytes, _ := json.MarshalIndent(
-		map[string]string{
-			"chapter": "1",
+		map[string]interface{}{
+			"chapter": 1,
 			"webhook": "",
 		},
 		"", "  ")
@@ -128,7 +127,7 @@ func sendMessage(msg string) {
 
 	// 5 attempts to send the webhook message
 	for i := 0; i < 5; i++ {
-		resp, err := http.Post(conf["webhook"], "application/json", bodyBuffer)
+		resp, err := http.Post(conf.Webhook, "application/json", bodyBuffer)
 		if err != nil {
 			log.Println("Failed to send Discord webhook message:", err)
 			time.Sleep(time.Second)
