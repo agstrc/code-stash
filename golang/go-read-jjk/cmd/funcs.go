@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -45,9 +44,9 @@ func readConfig() Config {
 		invalidConfigFile()
 	}
 
-	_, err = url.Parse(config.Webhook)
-	if err != nil {
-		errLogger.Println("Failed to parse discord webhook URL:", err)
+	exp := regexp.MustCompile(`https:\/\/discord\.com\/api\/webhooks\/[0-9]+\/\S+`)
+	if !exp.MatchString(config.Webhook) {
+		errLogger.Println("Invalid Discord webhook URL:", config.Webhook)
 		os.Exit(1)
 	}
 
