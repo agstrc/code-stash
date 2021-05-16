@@ -13,7 +13,7 @@ var errLogger = log.New(os.Stdout, "", log.LstdFlags)
 var conf = readConfig()
 
 func main() {
-	outLogger.Println("Checking for new JJK chapter at https://jujutsukaisen.online")
+	outLogger.Println("Checking for new JJK chapter at https://mangaplus.shueisha.co.jp/titles/100034")
 	latestR := latestReleased()
 	latestN, err := strconv.Atoi(conf["chapter"])
 

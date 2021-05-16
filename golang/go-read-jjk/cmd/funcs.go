@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
+	"github.com/chromedp/chromedp"
 )
 
 const confFile = "config.json"
@@ -70,40 +71,52 @@ func invalidConfigFile() {
 	errLogger.Fatalf("Configuration file created at %s. Write your Discorrd webhook URL into it.", fileDir+confFile)
 }
 
-// latestReleased returns the most recent JJK chapter listed on the website
+// latestReleased returns the number of the latest released JJK chapter
 func latestReleased() int {
-	resp, err := http.Get("https://jujutsukaisen.online/")
-	if err != nil {
-		errLogger.Fatalln(err)
-	}
-	defer resp.Body.Close()
+	var chaptersDiv string
+	ctx, cancel := chromedp.NewContext(context.Background())
 
-	html, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
+	// browser allocation. Does not need timeout
+	if err := chromedp.Run(ctx); err != nil {
+		log.Fatal(err)
+	}
+	cancel()
+
+	// 1 minute timeout while waiting for the chapters to show up
+	ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	// since, at the time of writing, I am not sure if the reference website uses a consistente HTML layout, I mostly
+	// played it safe. So the selection selects complete div which lists all available chapters. With that, I make use
+	// of some simple regex to extract all the chapters that are listed.
+
+	ctx, _ = chromedp.NewContext(ctx)
+	if err := chromedp.Run(ctx,
+		chromedp.Navigate("https://mangaplus.shueisha.co.jp/titles/100034"),
+		chromedp.Text("#app > div:nth-child(2) > div.styles-module_container_1rtol > "+
+			"div.styles-module_mainContainer_2tQWW > div > div > div.TitleDetail-module_flexContainer_1oGb4 > main > "+
+			"div:nth-child(1)", &chaptersDiv),
+	); err != nil {
+		log.Fatal(err)
 	}
 
-	sel := html.Find("li.row:nth-child(1)").First()
-	if sel.Length() == 0 {
-		msg := "Failed to find latest chapter on https://jujutsukaisen.online/. No match found for the given CSS" +
-			"selector"
+	exp := regexp.MustCompile("#[0-9]+")
+	chapters := exp.FindAllString(chaptersDiv, 16)
+
+	if len(chapters) == 0 {
+		log.Fatal("No chapters found")
+	}
+
+	// gets the latest chapter and removes the leading #
+	latestStr := chapters[len(chapters)-1][1:]
+	latestInt, err := strconv.Atoi(latestStr)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to conver matched chapter regexp \"%s\" to int", latestStr)
 		sendMessage(msg)
 		errLogger.Fatalln(msg)
 	}
 
-	// no error handling needed. The expression is known at compile time
-	exp, _ := regexp.Compile("[0-9]+")
-	chapterStr := exp.FindString(sel.Text())
-
-	chapterInt, err := strconv.Atoi(chapterStr)
-	if err != nil {
-		msg := fmt.Sprintf("Failed to conver matched chapter regexp \"%s\" to int", chapterStr)
-		sendMessage(msg)
-		errLogger.Fatalln(msg)
-	}
-
-	// at time of writing, the website always has a "preview" link to a unreleased chapter
-	return chapterInt - 1
+	return latestInt
 }
 
 // sendMessage send a Discord message to the webhook specified in the configuration map
