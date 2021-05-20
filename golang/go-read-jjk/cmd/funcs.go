@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -94,7 +95,12 @@ func latestReleased() int {
 			"div.styles-module_mainContainer_2tQWW > div > div > div.TitleDetail-module_flexContainer_1oGb4 > main > "+
 			"div:nth-child(1)", &chaptersDiv),
 	); err != nil {
-		msg := fmt.Sprintf("Failed to grab chapters text: %s", err.Error())
+		var msg string
+		if errors.Is(err, context.DeadlineExceeded) {
+			msg = fmt.Sprintf("Failed to list available chapters: timed out")
+		} else {
+			msg = fmt.Sprintf("Failed list available chapters: %s", err.Error())
+		}
 		sendMessage(msg)
 		errLogger.Fatalln(msg)
 	}
