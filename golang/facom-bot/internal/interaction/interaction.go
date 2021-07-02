@@ -18,7 +18,12 @@ var interactionHandlersMap = map[string]interactionFunc{
 
 // InteractionHandler calls the adequate function for a given Slash Command
 func InteractionHandler(s *dg.Session, i *dg.InteractionCreate) {
-	logger.Info.Printf("Command %s called", i.Data.Name)
+	if i.Member != nil {
+		logger.Info.Printf("Command %s called by %s", i.Data.Name, i.Member.User.Username)
+	} else {
+		logger.Info.Printf("Comand %s called by %s via DMs", i.Data.Name, i.User.Username)
+	}
+
 	if handler, ok := interactionHandlersMap[i.Data.Name]; ok {
 		handler(s, i)
 		return
