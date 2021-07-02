@@ -72,7 +72,7 @@ var commands = []dg.ApplicationCommand{
 						Value: "742549539051012126",
 					},
 					{
-						Name:  "P1 - Cálculo Diferencial e Integral I",
+						Name:  "P1 - Cálculo Diferencial e Integral 1",
 						Value: "742549533489233960",
 					},
 					{
@@ -104,7 +104,7 @@ var commands = []dg.ApplicationCommand{
 						Value: "742549541043306557",
 					},
 					{
-						Name:  "P2 - Algoritmos e Estrutura de Dados I",
+						Name:  "P2 - Algoritmos e Estrutura de Dados 1",
 						Value: "742549541622120473",
 					},
 					{
