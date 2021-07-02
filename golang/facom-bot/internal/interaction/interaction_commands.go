@@ -48,7 +48,15 @@ func materiaCommand(s *dg.Session, i *dg.InteractionCreate) {
 	interactionReplyEphemeral(s, i, "✅ Cargo adquirido com sucesso")
 }
 
+func ufuCommand(s *dg.Session, i *dg.InteractionCreate) {
+	interactionReply(s, i, "UFU ao contrário é UFU")
+}
+
 var commands = []dg.ApplicationCommand{
+	{
+		Name:        "ufu",
+		Description: "UFU ao contrário?",
+	},
 	{
 		Name:        "materia1-4",
 		Description: "Adiciona ou remove um cargo de matéria na sua conta",
