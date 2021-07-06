@@ -26,5 +26,5 @@ for element in "${DIRECTORIES[@]}"; do
     echo "Syncing ${local_path} into ${remote_path}"
 
     rclone mkdir -v "${remote_path}"
-    rclone sync -v "${local_path}" "${remote_path}"
+    rclone sync -v -L "${local_path}" "${remote_path}"
 done
