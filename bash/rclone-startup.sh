@@ -6,7 +6,8 @@ exec &>> "${HOME}/.rclone-sync.log"
 
 date --rfc-3339=s # Logs the date
 
-until ping -c 1 1.1.1.1; do # Checks for connectivity by pinging Cloudflare's DNS
+until ping -c 1 1.1.1.1 &>/dev/null; do # Checks for connectivity by pinging Cloudflare's DNS
+    echo 'Waiting for connectivity'
     sleep 1s
 done
 
