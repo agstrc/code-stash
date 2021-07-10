@@ -12,7 +12,6 @@ DIRECTORIES=(
     "/etc/zsh zsh"
     "${HOME}/.ssh ssh"
     "${HOME}/Documents linux-documents"
-    "${HOME}/Seafile seafile"
 )
 COMMANDS=(
     zip
@@ -36,6 +35,7 @@ for element in "${DIRECTORIES[@]}"; do
     local_path="${dir_arr[0]}"
     remote_path="${RCLONE_REMOTE}:rclone/${dir_arr[1]}.zip"
 
+    cd "${local_path}" || { echo "Could not change to directory ${local_path}" && exit 1; }
     echo "Zipping ${local_path} into ${remote_path}"
-    zip -r - "${local_path}" 2>/dev/null | rclone rcat "${remote_path}"
+    zip -r - ./ 2>/dev/null | rclone rcat "${remote_path}"
 done
